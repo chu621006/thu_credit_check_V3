@@ -31,6 +31,20 @@ def analyze_pdf(uploaded_file):
     df = extract_courses(text)
     category_map = load_category_map()
 
+    if df.empty:
+        return {
+            "course_table": pd.DataFrame(),
+            "summary_table": pd.DataFrame([{
+                "分類": "必修", "已修學分": 0, "應修學分": 84
+            }, {
+                "分類": "I 類選修", "已修學分": 0, "應修學分": 10
+            }, {
+                "分類": "II 類選修", "已修學分": 0, "應修學分": 10
+            }, {
+                "分類": "選修總學分", "已修學分": 0, "應修學分": 44
+            }])
+        }
+
     # 類別初始化
     for col in ["必修", "I類選修", "II類選修", "一般選修"]:
         df[col] = False
@@ -41,14 +55,15 @@ def analyze_pdf(uploaded_file):
             if name in names:
                 df.at[i, cat] = True
 
-    # 過濾不合格學分
+    # ✅ 正確縮排且安全的學分計算
     def compute_valid_credit(r):
-    try:
-        return r["學分"] if r["GPA"] is not None and r["GPA"] >= 1.7 else 0
-    except:
-        return 0
+        try:
+            return r["學分"] if r["GPA"] is not None and r["GPA"] >= 1.7 else 0
+        except:
+            return 0
 
-df["有效學分"] = df.apply(compute_valid_credit, axis=1)
+    df["有效學分"] = df.apply(compute_valid_credit, axis=1)
+
     summary = {
         "必修": df[df["必修"]]["有效學分"].sum(),
         "I類選修": df[df["I類選修"]]["有效學分"].sum(),
@@ -72,9 +87,3 @@ df["有效學分"] = df.apply(compute_valid_credit, axis=1)
         "course_table": df,
         "summary_table": summary_table
     }
-
-def check_requirements(summary_df):
-    summary_df["是否達標"] = summary_df["已修學分"] >= summary_df["應修學分"]
-    summary_df["尚缺學分"] = summary_df["應修學分"] - summary_df["已修學分"]
-    summary_df["尚缺學分"] = summary_df["尚缺學分"].apply(lambda x: 0 if x < 0 else x)
-    return summary_df
