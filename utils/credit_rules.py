@@ -42,7 +42,13 @@ def analyze_pdf(uploaded_file):
                 df.at[i, cat] = True
 
     # 過濾不合格學分
-    df["有效學分"] = df.apply(lambda r: r["學分"] if r["GPA"] is not None and r["GPA"] >= 1.7 else 0, axis=1)
+    def compute_valid_credit(r):
+    try:
+        return r["學分"] if r["GPA"] is not None and r["GPA"] >= 1.7 else 0
+    except:
+        return 0
+
+df["有效學分"] = df.apply(compute_valid_credit, axis=1)
 
     summary = {
         "必修": df[df["必修"]]["有效學分"].sum(),
