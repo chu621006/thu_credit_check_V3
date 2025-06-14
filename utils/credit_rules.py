@@ -49,7 +49,6 @@ def analyze_pdf(uploaded_file):
         return 0
 
 df["有效學分"] = df.apply(compute_valid_credit, axis=1)
-
     summary = {
         "必修": df[df["必修"]]["有效學分"].sum(),
         "I類選修": df[df["I類選修"]]["有效學分"].sum(),
